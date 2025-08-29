@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using PeliculasAPI;
 using PeliculasAPI.Servicios;
 using PeliculasAPI.Utilidades;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +19,33 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AutoMapperProfiles>());
+
+builder.Services.AddIdentityCore<IdentityUser>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<UserManager<IdentityUser>>();
+builder.Services.AddScoped<SignInManager<IdentityUser>>();
+
+builder.Services.AddAuthentication().AddJwtBearer(opciones =>
+{
+    opciones.MapInboundClaims = false;
+
+    opciones.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["llavejwt"]!)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization(opciones =>
+{
+    opciones.AddPolicy("esadmin", politica => politica.RequireClaim("esadmin"));
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options => 
 options.UseSqlServer("name=DefaultConnection", sqlServer => sqlServer.UseNetTopologySuite()));
@@ -40,15 +70,15 @@ builder.Services.AddCors(opciones =>
 
 builder.Services.AddTransient<IAlmacenadorArchivos, AlmacenadorArchivosLocal>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<IServicioUsuarios, ServicioUsuarios>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+
 
 app.UseHttpsRedirection();
 

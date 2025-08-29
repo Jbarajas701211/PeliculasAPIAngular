@@ -1,8 +1,12 @@
-﻿namespace PeliculasAPI.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace PeliculasAPI.DTOs
 {
     public class LocationDTO
     {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        [Range(-90, 90)]
+        public double Latitud { get; set; }
+        [Range(-180, 180)]
+        public double Longitud { get; set; }
     }
 }

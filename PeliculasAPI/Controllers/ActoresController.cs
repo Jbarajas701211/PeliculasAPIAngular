@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +14,7 @@ namespace PeliculasAPI.Controllers
 {
     [Route("api/actores")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "esadmin")]
     public class ActoresController: CustomBaseController
     {
         private readonly ApplicationDbContext context;
@@ -31,6 +34,13 @@ namespace PeliculasAPI.Controllers
             this.almacenadorArchivos = almacenadorArchivos;
         }
 
+        [HttpGet("getActores")]
+        [OutputCache(Tags = [cacheTag])]
+        public async Task<List<PeliculaActorDTO>> Get()
+        {
+            return await context.Actores.ProjectTo<PeliculaActorDTO>(mapper.ConfigurationProvider).ToListAsync();
+        }
+
         [HttpGet]
         [OutputCache(Tags = [cacheTag])]
         public async Task<List<ActorDTO>> Get([FromQuery] PaginacionDTO paginacion)
@@ -43,6 +53,14 @@ namespace PeliculasAPI.Controllers
         public async Task<ActionResult<ActorDTO>> Get(int id)
         {
             return await Get<Actor, ActorDTO>(id);
+        }
+
+        [HttpGet("{nombre}")]
+        public async Task<ActionResult<List<PeliculaActorDTO>>> Get(string nombre)
+        {
+            return await context.Actores.Where(a => a.Nombre.Contains(nombre))
+                .ProjectTo<PeliculaActorDTO>(mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         [HttpPost]

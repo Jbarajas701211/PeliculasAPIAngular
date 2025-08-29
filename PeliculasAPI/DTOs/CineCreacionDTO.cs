@@ -5,7 +5,8 @@ namespace PeliculasAPI.DTOs
     public class CineCreacionDTO
     {
         [Required]
-        public required string Name { get; set; }
+        [StringLength(75)]
+        public required string Nombre { get; set; }
         public LocationDTO? Ubicacion { get; set; }
     }
 }
